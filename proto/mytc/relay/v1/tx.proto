@@ -1,0 +1,38 @@
+syntax = "proto3";
+package mytc.relay.v1;
+
+import "gogoproto/gogo.proto";
+
+option go_package = "github.com/mytherra/mytc/x/relay/types";
+
+// Msg defines the relay-registry Msg service.
+service Msg {
+  // RegisterRelay registers (or replaces) the calling validator's relay endpoint.
+  rpc RegisterRelay(MsgRegisterRelay) returns (MsgRegisterRelayResponse);
+
+  // UnregisterRelay removes the calling validator's relay endpoint.
+  rpc UnregisterRelay(MsgUnregisterRelay) returns (MsgUnregisterRelayResponse);
+
+  // Heartbeat updates the LastHeartbeat timestamp on an existing endpoint.
+  rpc Heartbeat(MsgHeartbeat) returns (MsgHeartbeatResponse);
+}
+
+message MsgRegisterRelay {
+  string operator_addr = 1;
+  string wss_url       = 2;
+  string version       = 3;
+}
+
+message MsgRegisterRelayResponse {}
+
+message MsgUnregisterRelay {
+  string operator_addr = 1;
+}
+
+message MsgUnregisterRelayResponse {}
+
+message MsgHeartbeat {
+  string operator_addr = 1;
+}
+
+message MsgHeartbeatResponse {}

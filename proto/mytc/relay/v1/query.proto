@@ -1,0 +1,41 @@
+syntax = "proto3";
+package mytc.relay.v1;
+
+import "gogoproto/gogo.proto";
+import "google/api/annotations.proto";
+import "mytc/relay/v1/relay.proto";
+import "cosmos/base/query/v1beta1/pagination.proto";
+
+option go_package = "github.com/mytherra/mytc/x/relay/types";
+
+// Query defines the gRPC querier service.
+service Query {
+  // Endpoint queries a single relay endpoint by validator operator address.
+  rpc Endpoint(QueryEndpointRequest) returns (QueryEndpointResponse) {
+    option (google.api.http).get = "/mytc/relay/v1/endpoint/{operator_addr}";
+  }
+
+  // Endpoints queries every registered relay endpoint, optionally filtered by
+  // staleness (max_stale_seconds — 0 means no filter).
+  rpc Endpoints(QueryEndpointsRequest) returns (QueryEndpointsResponse) {
+    option (google.api.http).get = "/mytc/relay/v1/endpoints";
+  }
+}
+
+message QueryEndpointRequest {
+  string operator_addr = 1;
+}
+
+message QueryEndpointResponse {
+  RelayEndpoint endpoint = 1;
+}
+
+message QueryEndpointsRequest {
+  int64 max_stale_seconds = 1;
+  cosmos.base.query.v1beta1.PageRequest pagination = 2;
+}
+
+message QueryEndpointsResponse {
+  repeated RelayEndpoint endpoints = 1;
+  cosmos.base.query.v1beta1.PageResponse pagination = 2;
+}

@@ -1,0 +1,15 @@
+syntax = "proto3";
+package mytc.relay.v1;
+
+import "gogoproto/gogo.proto";
+
+option go_package = "github.com/mytherra/mytc/x/relay/types";
+
+// RelayEndpoint is a validator's published relay-server WSS URL.
+message RelayEndpoint {
+  string operator_addr  = 1;
+  string wss_url        = 2;
+  string version        = 3;
+  int64  last_heartbeat = 4;
+  int64  registered_at  = 5;
+}
