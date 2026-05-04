@@ -80,6 +80,10 @@ upgradekeeper "github.com/cosmos/cosmos-sdk/x/upgrade/keeper"
 	msmpkeeper "github.com/mytherra/mytc/x/msmp/keeper"
 	msmptypes "github.com/mytherra/mytc/x/msmp/types"
 
+	"github.com/mytherra/mytc/x/relay"
+	relaykeeper "github.com/mytherra/mytc/x/relay/keeper"
+	relaytypes "github.com/mytherra/mytc/x/relay/types"
+
 "github.com/spf13/cast"
 abci "github.com/tendermint/tendermint/abci/types"
 tmjson "github.com/tendermint/tendermint/libs/json"
@@ -122,6 +126,7 @@ distrclient.ProposalHandler,
 	vesting.AppModuleBasic{},
 	lockup.AppModuleBasic{},
 	msmp.AppModuleBasic{},
+	relay.AppModuleBasic{},
 )
 // module account permissions
 maccPerms = map[string][]string{
@@ -188,6 +193,7 @@ EvidenceKeeper   evidencekeeper.Keeper
 	FeeGrantKeeper   feegrantkeeper.Keeper
 	LockupKeeper     lockupkeeper.Keeper
 	MSMPKeeper       msmpkeeper.Keeper
+	RelayKeeper      relaykeeper.Keeper
 
 	// Module Manager
 mm *module.Manager
@@ -225,6 +231,7 @@ bApp.SetInterfaceRegistry(interfaceRegistry)
 		feegrant.StoreKey, evidencetypes.StoreKey, capabilitytypes.StoreKey,
 		lockuptypes.StoreKey,
 		msmptypes.StoreKey,
+		relaytypes.StoreKey,
 	)
 
 	tkeys := sdk.NewTransientStoreKeys(paramstypes.TStoreKey)
@@ -311,6 +318,12 @@ appCodec, keys[feegrant.StoreKey], app.AccountKeeper,
 		app.AccountKeeper,
 	)
 
+	app.RelayKeeper = *relaykeeper.NewKeeper(
+		appCodec,
+		keys[relaytypes.StoreKey],
+		&app.StakingKeeper,
+	)
+
 	// Register the staking hooks
 	// NOTE: stakingKeeper above is passed by reference, so that it can be modified like below:
 	app.StakingKeeper = *stakingKeeper.SetHooks(
@@ -359,6 +372,7 @@ crisis.NewAppModule(&app.CrisisKeeper, skipGenesisInvariants),
 		params.NewAppModule(app.ParamsKeeper),
 		lockup.NewAppModule(appCodec, app.LockupKeeper),
 		msmp.NewAppModule(appCodec, app.MSMPKeeper),
+		relay.NewAppModule(appCodec, app.RelayKeeper),
 	)
 
 	// During begin block slashing happens after distr.BeginBlocker so that
@@ -371,6 +385,7 @@ crisis.NewAppModule(&app.CrisisKeeper, skipGenesisInvariants),
 		crisistypes.ModuleName, genutiltypes.ModuleName, feegrant.ModuleName, paramstypes.ModuleName, vestingtypes.ModuleName,
 		lockuptypes.ModuleName,
 		msmptypes.ModuleName,
+		relaytypes.ModuleName,
 	)
 
 	app.mm.SetOrderEndBlockers(
@@ -380,6 +395,7 @@ crisis.NewAppModule(&app.CrisisKeeper, skipGenesisInvariants),
 		vestingtypes.ModuleName,
 		lockuptypes.ModuleName,
 		msmptypes.ModuleName,
+		relaytypes.ModuleName,
 	)
 
 	// NOTE: The genutils module must occur after staking so that pools are
@@ -405,6 +421,7 @@ crisis.NewAppModule(&app.CrisisKeeper, skipGenesisInvariants),
 		feegrant.ModuleName,
 		lockuptypes.ModuleName,
 		msmptypes.ModuleName,
+		relaytypes.ModuleName,
 	)
 
 	app.mm.RegisterInvariants(&app.CrisisKeeper)
