@@ -1,0 +1,22 @@
+# Build artifacts
+build/
+*.test
+*.out
+
+# IDE
+.idea/
+.vscode/
+*.swp
+
+# OS
+.DS_Store
+Thumbs.db
+
+# Local node data (never commit chain state or keys)
+data/
+.mytc/
+priv_validator_*.json
+node_key.json
+
+# Vendor (Go modules)
+vendor/

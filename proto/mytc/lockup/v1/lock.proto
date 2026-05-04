@@ -1,0 +1,15 @@
+syntax = "proto3";
+package mytc.lockup.v1;
+
+import "gogoproto/gogo.proto";
+import "cosmos/base/v1beta1/coin.proto";
+import "google/protobuf/timestamp.proto";
+
+option go_package = "github.com/mytherra/mytc/x/lockup/types";
+
+message Lock {
+  uint64 id = 1;
+  string owner = 2;
+  cosmos.base.v1beta1.Coin amount = 3 [(gogoproto.nullable) = false];
+  google.protobuf.Timestamp end_time = 4 [(gogoproto.stdtime) = true, (gogoproto.nullable) = false];
+}

@@ -1,0 +1,34 @@
+syntax = "proto3";
+package mytc.lockup.v1;
+
+import "gogoproto/gogo.proto";
+import "cosmos/base/v1beta1/coin.proto";
+import "google/protobuf/duration.proto";
+
+option go_package = "github.com/mytherra/mytc/x/lockup/types";
+
+// Msg defines the Msg service.
+service Msg {
+  // LockTokens locks tokens for a specific duration.
+  rpc LockTokens(MsgLockTokens) returns (MsgLockTokensResponse);
+
+  // Unlock unlocks tokens that have matured.
+  rpc Unlock(MsgUnlock) returns (MsgUnlockResponse);
+}
+
+message MsgLockTokens {
+  string owner = 1;
+  cosmos.base.v1beta1.Coin amount = 2 [(gogoproto.nullable) = false];
+  google.protobuf.Duration duration = 3 [(gogoproto.stdduration) = true, (gogoproto.nullable) = false];
+}
+
+message MsgLockTokensResponse {
+  uint64 lock_id = 1;
+}
+
+message MsgUnlock {
+  string owner = 1;
+  uint64 lock_id = 2;
+}
+
+message MsgUnlockResponse {}

@@ -1,0 +1,40 @@
+syntax = "proto3";
+package mytc.lockup.v1;
+
+import "gogoproto/gogo.proto";
+import "google/api/annotations.proto";
+import "mytc/lockup/v1/lock.proto";
+import "cosmos/base/query/v1beta1/pagination.proto";
+
+option go_package = "github.com/mytherra/mytc/x/lockup/types";
+
+// Query defines the gRPC querier service.
+service Query {
+  // Lock queries a lock by ID.
+  rpc Lock(QueryLockRequest) returns (QueryLockResponse) {
+    option (google.api.http).get = "/mytc/lockup/v1/locks/{lock_id}";
+  }
+
+  // LocksByOwner queries all locks for a specific owner.
+  rpc LocksByOwner(QueryLocksByOwnerRequest) returns (QueryLocksByOwnerResponse) {
+    option (google.api.http).get = "/mytc/lockup/v1/locks/by_owner/{owner}";
+  }
+}
+
+message QueryLockRequest {
+  uint64 lock_id = 1;
+}
+
+message QueryLockResponse {
+  Lock lock = 1;
+}
+
+message QueryLocksByOwnerRequest {
+  string owner = 1;
+  cosmos.base.query.v1beta1.PageRequest pagination = 2;
+}
+
+message QueryLocksByOwnerResponse {
+  repeated Lock locks = 1;
+  cosmos.base.query.v1beta1.PageResponse pagination = 2;
+}

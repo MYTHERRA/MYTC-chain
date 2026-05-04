@@ -1,0 +1,70 @@
+# This is a TOML config file.
+# For more information, see https://github.com/tendermint/tendermint
+
+# Proxy App URL
+# A URL to the Tendermint proxy app.
+# TCP or UNIX socket.
+proxy_app = "tcp://127.0.0.1:26658"
+
+# Moniker
+# A custom human readable name for this node
+moniker = "mytc-validator-1"
+
+# Fast Sync
+# If this node is starting from scratch, it can catch up by
+# downloading blocks from other nodes.
+fast_sync = true
+
+# Database backend: goleveldb | cleveldb | boltdb | rocksdb | badgerdb
+# For Windows, use "goleveldb" (pure Go implementation)
+db_backend = "goleveldb"
+
+# Database directory
+db_dir = "data"
+
+# Log Level
+log_level = "info"
+
+# RPC Server Configuration Options
+[rpc]
+# TCP or UNIX socket address for the RPC server to listen on
+laddr = "tcp://127.0.0.1:26657"
+
+# CORS headers
+cors_allowed_origins = ["*"]
+
+# P2P Configuration Options
+[p2p]
+# Address to listen for incoming connections
+laddr = "tcp://0.0.0.0:26656"
+
+# Comma separated list of seed nodes to connect to
+seeds = ""
+
+# Comma separated list of nodes to keep persistent connections to
+persistent_peers = ""
+
+# Path to address book
+addr_book_file = "config/addrbook.json"
+
+# Consensus Configuration Options
+[consensus]
+wal_file = "data/cs.wal/wal"
+
+# How long we wait for a proposal block before prevoting nil
+timeout_propose = "3s"
+
+# How long we wait after receiving +2/3 prevotes for “anything” (ie. not a single block or nil)
+timeout_prevote = "1s"
+
+# How long we wait after receiving +2/3 precommits for “anything” (ie. not a single block or nil)
+timeout_precommit = "1s"
+
+# How long we wait after committing a block, before starting on the new height
+timeout_commit = "5s"
+
+# Instrumentation Configuration Options
+[instrumentation]
+# When true, Prometheus metrics are served
+prometheus = true
+prometheus_listen_addr = ":26660"
