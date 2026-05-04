@@ -15,7 +15,7 @@ func (k Keeper) SetEndpoint(ctx sdk.Context, ep types.RelayEndpoint) {
 		// SetEndpoint should only be called with already-validated input.
 		panic(err)
 	}
-	bz := k.cdc.MustMarshal(&ep)
+	bz := k.cdc.MustMarshalJSON(&ep)
 	store.Set(types.GetEndpointKey(valAddr), bz)
 }
 
@@ -27,7 +27,7 @@ func (k Keeper) GetEndpoint(ctx sdk.Context, valoper sdk.ValAddress) (types.Rela
 		return types.RelayEndpoint{}, false
 	}
 	var ep types.RelayEndpoint
-	k.cdc.MustUnmarshal(bz, &ep)
+	k.cdc.MustUnmarshalJSON(bz, &ep)
 	return ep, true
 }
 
@@ -44,7 +44,7 @@ func (k Keeper) IterateEndpoints(ctx sdk.Context, cb func(types.RelayEndpoint) (
 	defer iter.Close()
 	for ; iter.Valid(); iter.Next() {
 		var ep types.RelayEndpoint
-		k.cdc.MustUnmarshal(iter.Value(), &ep)
+		k.cdc.MustUnmarshalJSON(iter.Value(), &ep)
 		if cb(ep) {
 			return
 		}
