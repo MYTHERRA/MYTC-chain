@@ -1,3 +1,4 @@
+<img width="600" height="600" alt="MYTC" src="https://github.com/user-attachments/assets/a6312b64-8441-4ae2-b753-a158f0db4fe2" />
 # MYTC-chain
 
 Mytherra Communication — Cosmos-SDK based PoS chain for the Mytherra ecosystem.
