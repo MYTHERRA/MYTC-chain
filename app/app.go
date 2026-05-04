@@ -429,6 +429,25 @@ crisis.NewAppModule(&app.CrisisKeeper, skipGenesisInvariants),
 	app.configurator = module.NewConfigurator(app.appCodec, app.MsgServiceRouter(), app.GRPCQueryRouter())
 	app.mm.RegisterServices(app.configurator)
 
+	// Upgrade handler for adding the x/relay module to a running chain.
+	// Triggered by an upgrade-info.json with name="v2-relay" — either via
+	// governance software-upgrade proposal or written manually for a
+	// single-validator chain.
+	app.UpgradeKeeper.SetUpgradeHandler("v2-relay", func(ctx sdk.Context, plan upgradetypes.Plan, fromVM module.VersionMap) (module.VersionMap, error) {
+		return app.mm.RunMigrations(ctx, app.configurator, fromVM)
+	})
+
+	// Register the new x/relay store key during the upgrade. Without this
+	// the store version is 0 while the rest of the chain is at height N,
+	// causing "store version mismatch" on next start.
+	upgradeInfo, err := app.UpgradeKeeper.ReadUpgradeInfoFromDisk()
+	if err == nil && upgradeInfo.Name == "v2-relay" && !app.UpgradeKeeper.IsSkipHeight(upgradeInfo.Height) {
+		storeUpgrades := storetypes.StoreUpgrades{
+			Added: []string{relaytypes.StoreKey},
+		}
+		app.SetStoreLoader(upgradetypes.UpgradeStoreLoader(upgradeInfo.Height, &storeUpgrades))
+	}
+
 	// initialize stores
 	app.MountKVStores(keys)
 	app.MountTransientStores(tkeys)

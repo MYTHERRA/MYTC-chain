@@ -1,6 +1,7 @@
 package relay
 
 import (
+	"context"
 	"encoding/json"
 
 	"github.com/gorilla/mux"
@@ -53,7 +54,11 @@ func (AppModuleBasic) ValidateGenesis(cdc codec.JSONCodec, config client.TxEncod
 
 func (AppModuleBasic) RegisterRESTRoutes(clientCtx client.Context, rtr *mux.Router) {}
 
-func (AppModuleBasic) RegisterGRPCGatewayRoutes(clientCtx client.Context, mux *runtime.ServeMux) {}
+func (AppModuleBasic) RegisterGRPCGatewayRoutes(clientCtx client.Context, mux *runtime.ServeMux) {
+	if err := types.RegisterQueryHandlerClient(context.Background(), mux, types.NewQueryClient(clientCtx)); err != nil {
+		panic(err)
+	}
+}
 
 func (a AppModuleBasic) GetTxCmd() *cobra.Command    { return relaycli.NewTxCmd() }
 func (AppModuleBasic) GetQueryCmd() *cobra.Command   { return relaycli.NewQueryCmd() }
