@@ -83,14 +83,14 @@ If the hash doesn't match — **stop**. Don't start with a tampered genesis. Rea
 Edit `~/.mytc/config/config.toml`:
 
 ```toml
-# Find this in [p2p] section
-persistent_peers = "5c67756024ba0566e5408330e9055b0009bae23a@217.154.114.75:26656"
+# Find this in [p2p] section. Both Foundation nodes — list both for redundancy.
+persistent_peers = "5c67756024ba0566e5408330e9055b0009bae23a@217.154.114.75:26656,4b1bf1f6447be80665c4da7d040d05d1769e1e01@87.106.31.141:26656"
 
 # IMPORTANT — set this to YOUR public IP so other validators can dial in.
 external_address = "YOUR.PUBLIC.IP:26656"
 ```
 
-(`5c67…@217.154.114.75:26656` is the Mytherra Foundation bootstrap node. The list will grow as more validators join.)
+The two Foundation nodes are `mytherra-foundation-1` (217.154.114.75) and `mytherra-foundation-2` (87.106.31.141). The peer list will grow as more validators join.
 
 ## 7. Sync the chain
 
@@ -106,27 +106,83 @@ mytcd start --home ~/.mytc
 
 This works fine for a small chain. **However**: in some IONOS-to-IONOS / cross-cloud-provider setups, the block sync stalls with `invalid peer` errors due to packet fragmentation or MTU mismatches on big block-data messages. If you see `module=blockchain` errors and your height stays at 1, fall back to 7b.
 
-### 7b. Snapshot sync (fast workaround)
+### 7b. State-sync (recommended — fast, fully automated)
 
-Get a copy of the data directory from a healthy operator. Coordinate with the foundation contact — they can `rsync` you a snapshot over SSH:
+Both Foundation nodes generate ABCI snapshots every 1000 blocks. Your node fetches the latest snapshot over P2P, verifies it against a recent block hash, and starts at the snapshot height. Sync time: ~minutes instead of hours.
+
+**1. Pull a fresh trust block** (height + hash from any healthy node):
 
 ```sh
-# On YOUR validator machine (run before starting mytcd):
-mytcd init "your-moniker-here" --chain-id mytherra-1 --home ~/.mytc
-# (then preserve YOUR own keys before importing data)
-cp ~/.mytc/config/priv_validator_key.json /tmp/my-priv.json
-cp ~/.mytc/config/node_key.json /tmp/my-node-key.json
-cp ~/.mytc/data/priv_validator_state.json /tmp/my-priv-state.json
-
-# Foundation operator runs (on mainnet):
-#   rsync -az /root/.mytc/data/ user@your.vps:/home/mytc/.mytc/data/
-
-# Then on your machine, restore YOUR validator keys (must NOT be the same as another validator's):
-cp /tmp/my-priv-state.json ~/.mytc/data/priv_validator_state.json
-chown -R mytc:mytc ~/.mytc
+# Pick a height ~2000 blocks below the current tip:
+TIP=$(curl -s https://app.mytmessenger.mytherrablockchain.org/mytc-rpc/status | jq -r '.result.sync_info.latest_block_height')
+TRUST_HEIGHT=$(( (TIP - 2000) / 1000 * 1000 ))   # round down to multiple of 1000
+TRUST_HASH=$(curl -s "https://app.mytmessenger.mytherrablockchain.org/mytc-rpc/block?height=$TRUST_HEIGHT" | jq -r '.result.block_id.hash')
+echo "trust_height=$TRUST_HEIGHT"
+echo "trust_hash=$TRUST_HASH"
 ```
 
-> 🔒 **Critical**: never reuse another validator's `priv_validator_key.json`. Two nodes signing with the same key cause double-sign slashing. Always preserve and restore your own.
+**2. Edit `~/.mytc/config/config.toml`** under `[statesync]`:
+
+```toml
+[statesync]
+enable = true
+
+# Two independent RPC endpoints (state-sync requires ≥ 2 for cross-verification)
+rpc_servers = "https://app.mytmessenger.mytherrablockchain.org/mytc-rpc,http://87.106.31.141/mytc-rpc"
+
+trust_height = <value from step 1>
+trust_hash = "<value from step 1>"
+trust_period = "168h0m0s"
+
+discovery_time = "15s"
+chunk_request_timeout = "10s"
+chunk_fetchers = "4"
+```
+
+**3. Reset existing data** (state-sync starts with an empty database):
+
+```sh
+mytcd tendermint unsafe-reset-all --home ~/.mytc
+```
+
+This clears the block DB but leaves your `priv_validator_key.json` and `node_key.json` intact.
+
+**4. Start the node**:
+
+```sh
+mytcd start --home ~/.mytc
+```
+
+You should see logs like:
+```
+INF Discovering snapshots
+INF Found snapshot height=NNN format=...
+INF Fetching snapshot chunks
+INF State synced to height=NNN
+```
+
+After state-sync completes, the node automatically transitions to consensus mode and follows the chain tip.
+
+### 7c. Manual snapshot tarball (fallback when state-sync fails)
+
+If state-sync RPC discovery doesn't find a snapshot (e.g. fresh chain just past genesis), the foundation can ship you a data-dir tarball:
+
+```sh
+# Available at:
+wget http://87.106.31.141/snapshots/mytc-data-LATEST.tgz
+sha256sum mytc-data-LATEST.tgz   # verify against published hash
+
+# Stop your node, replace data dir, preserve your keys:
+systemctl stop mytc
+cp ~/.mytc/data/priv_validator_state.json /tmp/my-priv-state.json
+rm -rf ~/.mytc/data && mkdir ~/.mytc/data
+tar xzf mytc-data-LATEST.tgz -C ~/.mytc/data
+cp /tmp/my-priv-state.json ~/.mytc/data/priv_validator_state.json
+chown -R mytc:mytc ~/.mytc
+systemctl start mytc
+```
+
+> 🔒 **Critical**: never copy another validator's `priv_validator_key.json` into your node. Two nodes signing with the same key cause double-sign slashing. The tarball above excludes signing-state files for that reason — your existing keys stay untouched.
 
 ## 8. Run as a systemd service
 
